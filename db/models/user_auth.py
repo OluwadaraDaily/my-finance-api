@@ -8,7 +8,7 @@ class UserAuth(Base):
     __tablename__ = "user_auth"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    user = relationship("User", back_populates="auth")
+    user = relationship("User", back_populates="user_auth")
     is_active = Column(Boolean, default=True)
     is_expired = Column(Boolean, default=False)
     access_token = Column(String(255), index=True)

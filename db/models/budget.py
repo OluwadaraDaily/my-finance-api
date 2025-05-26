@@ -23,5 +23,7 @@ class Budget(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
+    transactions = relationship("Transaction", back_populates="budget")
+
     def __repr__(self):
         return f"<Budget {self.name}>"
