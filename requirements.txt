@@ -40,3 +40,4 @@ watchfiles==1.0.5
 websockets==15.0.1
 passlib[bcrypt]==1.7.4
 bcrypt==4.3.0
+fastapi-mail==1.4.1
