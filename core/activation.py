@@ -19,11 +19,12 @@ class ActivationService:
             ActivationToken.is_used == False
         ).delete()
         
-        # Create new token
+        # Create new token with timezone-aware datetime
+        current_time = datetime.now(timezone.utc)
         token = ActivationToken(
             user_id=user.id,
             token=ActivationService.generate_token(),
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=24)  # Token expires in 24 hours
+            expires_at=current_time + timedelta(hours=24)  # Token expires in 24 hours
         )
         db.add(token)
         db.commit()
@@ -41,7 +42,12 @@ class ActivationService:
         if not activation_token:
             return False, "Invalid or already used token"
             
-        if activation_token.expires_at < datetime.now(timezone.utc):
+        # Ensure both datetimes are timezone-aware
+        current_time = datetime.now(timezone.utc)
+        # Convert expires_at to UTC if it's not already
+        expires_at = activation_token.expires_at.replace(tzinfo=timezone.utc) if activation_token.expires_at.tzinfo is None else activation_token.expires_at
+        
+        if expires_at < current_time:
             return False, "Token has expired"
             
         return True, "Token is valid" 
