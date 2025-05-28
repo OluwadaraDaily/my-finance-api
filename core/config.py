@@ -8,11 +8,6 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 ENV_FILE = os.path.join(BASE_DIR, ".env")
 
-# Clear any existing environment variables
-for key in ['MAIL_USERNAME', 'MAIL_FROM', 'MAIL_SERVER', 'MAIL_PORT']:
-    if key in os.environ:
-        del os.environ[key]
-
 # Load .env file
 load_dotenv(ENV_FILE, override=True)
 
