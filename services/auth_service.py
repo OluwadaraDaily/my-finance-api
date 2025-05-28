@@ -3,13 +3,13 @@ from datetime import timedelta
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from schemas.user import UserCreate, User as UserSchema, UserLogin
-from schemas.auth import UserAuth, RefreshTokenRequest, LogoutRequest
+from db.models.user_auth import UserAuth
 from core.security import get_password_hash, verify_password
 from core.jwt import create_access_token, create_refresh_token, verify_token
 from services.email_service import EmailService
 from core.activation import ActivationService
 from crud.user import UserCRUD
-from core.config import ACCESS_TOKEN_EXPIRE_MINUTES
+from core.jwt import ACCESS_TOKEN_EXPIRE_MINUTES
 from jose import JWTError
 from db.models.activation_token import ActivationToken
 

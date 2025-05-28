@@ -1,21 +1,11 @@
 # Authentication endpoints
-
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from db.session import get_db
-from db.models.user import User
-from core.security import get_password_hash, verify_password
-from crud import user as crud
-from schemas.user import UserCreate, UserLogin, User as UserSchema
-from core.activation import ActivationService
+from schemas.user import UserCreate, UserLogin
 from services.email_service import EmailService
 from services.auth_service import AuthService
 from core.deps import get_email_core
-from db.models.activation_token import ActivationToken
-from core.jwt import create_access_token, create_refresh_token, ACCESS_TOKEN_EXPIRE_MINUTES, verify_token
-from datetime import timedelta
-from db.models.user_auth import UserAuth
-from jose import JWTError
 from schemas.auth import RefreshTokenRequest, LogoutRequest
 
 router = APIRouter()
