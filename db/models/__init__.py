@@ -5,6 +5,7 @@ from .category import Category
 from .pots import Pot
 from .transaction import Transaction
 from .user_auth import UserAuth
+from .activation_token import ActivationToken
 
 # This ensures all models are imported and registered with Base
 __all__ = [
@@ -14,5 +15,6 @@ __all__ = [
     "Category",
     "Pot",
     "Transaction",
-    "UserAuth"
+    "UserAuth",
+    "ActivationToken"
 ]

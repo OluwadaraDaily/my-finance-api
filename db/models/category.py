@@ -12,6 +12,9 @@ class Category(Base):
     color = Column(String(255), default="#000000")
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    transactions = relationship("Transaction", back_populates="category")
+    budgets = relationship("Budget", back_populates="category")
 
     def __repr__(self):
         return f"<Category {self.name}>"

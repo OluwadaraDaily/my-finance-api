@@ -15,6 +15,11 @@ class User(Base):
     is_activated = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    accounts = relationship("Account", back_populates="user")
+    budgets = relationship("Budget", back_populates="user")
+    user_auth = relationship("UserAuth", back_populates="user")
+    activation_token = relationship("ActivationToken", back_populates="user", uselist=False)
 
     def __repr__(self):
         return f"<User {self.username}>"

@@ -12,6 +12,8 @@ class Account(Base):
     balance = Column(Integer, default=0)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    transactions = relationship("Transaction", back_populates="account")
 
     def __repr__(self):
         return f"<Account {self.user.username}>"
