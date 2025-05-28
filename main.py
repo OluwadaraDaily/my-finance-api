@@ -5,8 +5,9 @@ from api.v1.endpoints import auth_router
 from db.session import engine
 from db.base import Base
 from db.models import *  # This imports all models
-from core.email import EmailService
+from services.email_service import EmailService
 from pydantic import EmailStr, BaseModel
+from core.deps import get_email_core
 
 app = FastAPI()
 
@@ -23,7 +24,7 @@ class EmailRequest(BaseModel):
 async def test_email(request: EmailRequest):
     """Test endpoint to verify email configuration"""
     try:
-        await EmailService.send_activation_email(
+        await EmailService(get_email_core()).send_activation_email(
             email=request.email,
             username="Test User",
             activation_token="test-token"

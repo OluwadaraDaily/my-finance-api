@@ -4,6 +4,7 @@ from core.jwt import verify_token
 from db.session import get_db
 from sqlalchemy.orm import Session
 from db.models.user_auth import UserAuth
+from core.email import EmailCore
 
 security = HTTPBearer()
 
@@ -38,4 +39,10 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"
-        ) 
+        )
+
+def get_email_core() -> EmailCore:
+    """
+    Get email core instance.
+    """
+    return EmailCore() 

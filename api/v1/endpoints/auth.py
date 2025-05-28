@@ -8,7 +8,8 @@ from core.security import get_password_hash, verify_password
 from crud import user as crud
 from schemas.user import UserCreate, UserLogin, User as UserSchema
 from core.activation import ActivationService
-from core.email import EmailService
+from services.email_service import EmailService
+from core.deps import get_email_core
 from db.models.activation_token import ActivationToken
 from core.jwt import create_access_token, create_refresh_token, ACCESS_TOKEN_EXPIRE_MINUTES, verify_token
 from datetime import timedelta
@@ -19,13 +20,18 @@ from schemas.auth import RefreshTokenRequest, LogoutRequest
 router = APIRouter()
 
 @router.post("/auth/register", response_model=dict)
-async def register(user: UserCreate, db: Session = Depends(get_db)) -> dict:
+async def register(
+    user: UserCreate,
+    db: Session = Depends(get_db),
+    email_service: EmailService = Depends(lambda: EmailService(get_email_core()))
+) -> dict:
     """
     Register a new user and send activation email.
 
     Args:
         user: UserCreate object containing user details
         db: Database session
+        email_service: Email service instance
 
     Returns:
         {
@@ -53,7 +59,7 @@ async def register(user: UserCreate, db: Session = Depends(get_db)) -> dict:
     activation_token = ActivationService.create_activation_token(db, db_user)
     
     # Send activation email
-    await EmailService.send_activation_email(
+    await email_service.send_activation_email(
         email=db_user.email,
         username=db_user.username,
         activation_token=activation_token.token
