@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     MAIL_SERVER: str = "smtp.gmail.com"
     MAIL_FROM_NAME: str = "My Finance"
 
+    JWT_SECRET_KEY: str
+
+    # Test database settings
+    TEST_DB_URL: str
+
     class Config:
         env_file = ENV_FILE
         env_file_encoding = 'utf-8'

@@ -3,11 +3,22 @@ from sqlalchemy.orm import Session
 from crud.user import UserCRUD
 from schemas.user import UserCreate, UserUpdate, User as UserSchema
 from fastapi import HTTPException, status
+from db.models.user import User
 
 class UserService:
     def __init__(self, db: Session):
         self.db = db
         self.crud = UserCRUD(db)
+
+    def create_user(self, user: UserCreate) -> UserSchema:
+        """Create user"""
+        db_user = self.db.query(User).filter(User.email == user.email).first()
+        if db_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User already exists"
+            )
+        return self.crud.create(user)
 
     def get_user(self, user_id: int) -> UserSchema:
         """Get user by ID"""
