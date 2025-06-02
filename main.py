@@ -1,7 +1,7 @@
 # FastAPI app entry point
 
 from fastapi import FastAPI
-from api.v1.endpoints import auth_router
+from api.v1.endpoints import auth_router, users_router
 from db.session import engine
 from db.base import Base
 from db.models import *  # This imports all models
@@ -12,6 +12,7 @@ from core.deps import get_email_core
 app = FastAPI()
 
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(users_router, prefix="/api/v1")
 
 @app.on_event("startup")
 async def startup_event():
