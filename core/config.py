@@ -1,5 +1,6 @@
 # Pydantic settings
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -28,11 +29,12 @@ class Settings(BaseSettings):
     # Test database settings
     TEST_DB_URL: str
 
-    class Config:
-        env_file = ENV_FILE
-        env_file_encoding = 'utf-8'
-        case_sensitive = True
-        extra = 'ignore'
+    model_config = ConfigDict(
+        env_file=ENV_FILE,
+        env_file_encoding='utf-8',
+        case_sensitive=True,
+        extra='ignore'
+    )
 
 # Initialize settings
 settings = Settings(

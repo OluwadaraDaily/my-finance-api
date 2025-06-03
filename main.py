@@ -8,15 +8,20 @@ from db.models import *  # This imports all models
 from services.email_service import EmailService
 from pydantic import EmailStr, BaseModel
 from core.deps import get_email_core
+from contextlib import asynccontextmanager
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    Base.metadata.create_all(bind=engine)
+    yield
+    # Shutdown
+    pass
+
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
-
-@app.on_event("startup")
-async def startup_event():
-    Base.metadata.create_all(bind=engine)
 
 class EmailRequest(BaseModel):
     email: EmailStr
