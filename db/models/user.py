@@ -21,6 +21,7 @@ class User(Base):
     user_auth = relationship("UserAuth", back_populates="user")
     activation_token = relationship("ActivationToken", back_populates="user", uselist=False)
     api_keys = relationship("APIKey", back_populates="user")
+    categories = relationship("Category", back_populates="user")
 
     def __repr__(self):
         return f"<User {self.username}>"
