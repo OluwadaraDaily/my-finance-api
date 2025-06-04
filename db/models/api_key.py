@@ -13,9 +13,9 @@ class  APIKey(Base):
     name = Column(String(255), nullable=False)  # For identifying different API keys (e.g., "Telegram Bot")
     key = Column(String(255), nullable=False, unique=True)  # The hashed API key
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
-    last_used_at = Column(DateTime, nullable=True)
-    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    last_used_at = Column(DateTime(timezone=True), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
     
     user = relationship("User", back_populates="api_keys")
 
@@ -42,4 +42,7 @@ class  APIKey(Base):
         """
         if not self.expires_at:
             return False
-        return datetime.now(timezone.utc) > self.expires_at 
+        # Ensure both datetimes have timezone info for comparison
+        now = datetime.now(timezone.utc)
+        expires_at = self.expires_at.replace(tzinfo=timezone.utc) if self.expires_at.tzinfo is None else self.expires_at
+        return now > expires_at 

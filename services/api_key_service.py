@@ -3,6 +3,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from db.models.api_key import APIKey
 from fastapi import HTTPException, status
+import hashlib
 
 class APIKeyService:
     def __init__(self, db: Session):
@@ -21,8 +22,9 @@ class APIKeyService:
         raw_key, hashed_key = APIKey.generate_key()
         
         expires_at = None
-        if expires_in_days:
+        if expires_in_days is not None:
             expires_at = datetime.now(timezone.utc) + timedelta(days=expires_in_days)
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
 
         api_key = APIKey(
             user_id=user_id,
@@ -57,15 +59,19 @@ class APIKeyService:
         Validate an API key and return the associated APIKey object if valid.
         Also updates the last_used_at timestamp.
         """
+        # Calculate the hash of the raw key
+        hashed_key = hashlib.sha256(raw_key.encode()).hexdigest()
+        
         # Find the API key by its hash
         api_key = self.db.query(APIKey).filter(
-            APIKey.key == APIKey.verify_key(raw_key, APIKey.key)
+            APIKey.key == hashed_key,
+            APIKey.is_active == True
         ).first()
 
         if not api_key:
             return None
 
-        if not api_key.is_active or api_key.is_expired():
+        if api_key.is_expired():
             return None
 
         # Update last used timestamp
@@ -80,7 +86,8 @@ class APIKeyService:
         """
         api_key = self.db.query(APIKey).filter(
             APIKey.id == key_id,
-            APIKey.user_id == user_id
+            APIKey.user_id == user_id,
+            APIKey.is_active == True
         ).first()
 
         if not api_key:
@@ -106,6 +113,7 @@ class APIKeyService:
                 detail="API key not found"
             )
 
+        # Generate new key
         raw_key, hashed_key = APIKey.generate_key()
         api_key.key = hashed_key
         api_key.last_used_at = None
