@@ -5,6 +5,6 @@ from core.deps import get_current_user
 
 router = APIRouter()
 
-@router.get("/users/me")
+@router.get("/me")
 async def get_current_user(current_user: User = Depends(get_current_user)):
     return current_user

@@ -10,7 +10,7 @@ from schemas.auth import RefreshTokenRequest, LogoutRequest
 
 router = APIRouter()
 
-@router.post("/auth/register", response_model=dict)
+@router.post("/register", response_model=dict)
 async def register(
     user: UserCreate,
     db: Session = Depends(get_db),
@@ -22,7 +22,7 @@ async def register(
     auth_service = AuthService(db)
     return await auth_service.register_user(user, email_service)
 
-@router.post("/auth/login", response_model=dict)
+@router.post("/login", response_model=dict)
 async def login(user: UserLogin, db: Session = Depends(get_db)) -> dict:
     """
     Login a user.
@@ -30,7 +30,7 @@ async def login(user: UserLogin, db: Session = Depends(get_db)) -> dict:
     auth_service = AuthService(db)
     return await auth_service.login_user(user)
 
-@router.get("/auth/activate/{token}", response_model=dict)
+@router.get("/activate/{token}", response_model=dict)
 async def activate_account(token: str, db: Session = Depends(get_db)) -> dict:
     """
     Activate a user account using the activation token.
@@ -38,7 +38,7 @@ async def activate_account(token: str, db: Session = Depends(get_db)) -> dict:
     auth_service = AuthService(db)
     return await auth_service.activate_account(token)
 
-@router.post("/auth/refresh", response_model=dict)
+@router.post("/refresh", response_model=dict)
 async def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)) -> dict:
     """
     Refresh access token using refresh token.
@@ -46,7 +46,7 @@ async def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_
     auth_service = AuthService(db)
     return await auth_service.refresh_token(request.refresh_token)
 
-@router.post("/auth/logout")
+@router.post("/logout")
 async def logout(request: LogoutRequest, db: Session = Depends(get_db)) -> dict:
     """
     Logout user by invalidating tokens.
