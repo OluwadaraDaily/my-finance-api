@@ -1,7 +1,7 @@
 # FastAPI app entry point
 
 from fastapi import FastAPI
-from api.v1.endpoints import auth_router, users_router, api_keys_router
+from api.v1.endpoints import auth_router, users_router, api_keys_router, categories_router
 from db.session import engine
 from db.base import Base
 from db.models import *  # This imports all models
@@ -23,6 +23,7 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(auth_router, prefix="/api/v1/auth")
 app.include_router(users_router, prefix="/api/v1/users")
 app.include_router(api_keys_router, prefix="/api/v1/api-keys")
+app.include_router(categories_router, prefix="/api/v1/categories")
 
 class EmailRequest(BaseModel):
     email: EmailStr
