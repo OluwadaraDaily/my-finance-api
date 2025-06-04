@@ -20,6 +20,7 @@ class User(Base):
     budgets = relationship("Budget", back_populates="user")
     user_auth = relationship("UserAuth", back_populates="user")
     activation_token = relationship("ActivationToken", back_populates="user", uselist=False)
+    api_keys = relationship("APIKey", back_populates="user")
 
     def __repr__(self):
         return f"<User {self.username}>"

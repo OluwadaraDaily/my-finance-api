@@ -110,7 +110,8 @@ class AuthService:
     async def refresh_token(self, refresh_token: str) -> dict:
         """
         Refresh access token using refresh token.
-
+        Implements token rotation - each refresh token can only be used once.
+        
         Args:
             refresh_token: The refresh token to use
 
@@ -135,17 +136,28 @@ class AuthService:
                     detail="User not found"
                 )
             
-            # Get existing auth record
+            # Get existing auth record and validate refresh token
             user_auth = self.db.query(UserAuth).filter(
                 UserAuth.user_id == db_user.id,
                 UserAuth.refresh_token == refresh_token,
-                UserAuth.is_active == True
+                UserAuth.is_active == True,
+                UserAuth.is_expired == False
             ).first()
             
             if not user_auth:
+                # Potential reuse of refresh token - invalidate all tokens for security
+                self.db.query(UserAuth).filter(
+                    UserAuth.user_id == db_user.id,
+                    UserAuth.is_active == True
+                ).update({
+                    "is_active": False,
+                    "is_expired": True
+                })
+                self.db.commit()
+                
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid refresh token"
+                    detail="Refresh token has been invalidated"
                 )
             
             # Generate new tokens
@@ -155,9 +167,19 @@ class AuthService:
             )
             new_refresh_token = create_refresh_token(data={"sub": db_user.email})
             
-            # Update tokens in database
-            user_auth.access_token = new_access_token
-            user_auth.refresh_token = new_refresh_token
+            # Invalidate old refresh token
+            user_auth.is_active = False
+            user_auth.is_expired = True
+            
+            # Create new auth record with new tokens
+            new_user_auth = UserAuth(
+                user_id=db_user.id,
+                access_token=new_access_token,
+                refresh_token=new_refresh_token,
+                is_active=True,
+                is_expired=False
+            )
+            self.db.add(new_user_auth)
             self.db.commit()
             
             return {
@@ -171,7 +193,7 @@ class AuthService:
         except JWTError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid refresh token"
+                detail="Invalid or expired refresh token"
             )
 
     async def logout(self, access_token: str) -> dict:

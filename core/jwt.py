@@ -40,6 +40,6 @@ def verify_token(token: str) -> dict:
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
+            detail="Token has expired or is invalid",
             headers={"WWW-Authenticate": "Bearer"},
         ) 
