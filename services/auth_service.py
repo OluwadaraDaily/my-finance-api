@@ -12,6 +12,7 @@ from crud.user import UserCRUD
 from core.jwt import ACCESS_TOKEN_EXPIRE_MINUTES
 from jose import JWTError
 from db.models.activation_token import ActivationToken
+import os
 
 class AuthService:
     def __init__(self, db: Session):
@@ -79,12 +80,19 @@ class AuthService:
                 detail="Invalid credentials"
             )
         
+        # Use test secret key if in test environment
+        secret_key = os.getenv("JWT_SECRET_KEY")
+        
         # Create tokens
         access_token = create_access_token(
             data={"sub": db_user.email},
-            expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+            secret_key=secret_key
         )
-        refresh_token = create_refresh_token(data={"sub": db_user.email})
+        refresh_token = create_refresh_token(
+            data={"sub": db_user.email},
+            secret_key=secret_key
+        )
         
         # Store tokens in database
         user_auth = UserAuth(

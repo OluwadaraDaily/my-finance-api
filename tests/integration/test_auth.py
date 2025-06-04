@@ -1,4 +1,3 @@
-import pytest
 from fastapi import status
 
 def test_login_success(client, test_user):
@@ -24,24 +23,15 @@ def test_login_wrong_password(client, test_user):
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-def test_protected_route_with_token(client, test_user):
-    login_response = client.post(
-        "/api/v1/auth/login",
-        json={
-            "email": test_user.email,
-            "password": "testpassword123"
-        }
-    )
-    token = login_response.json()["data"]["access_token"]
-    
-    # Test protected route
+def test_protected_route_with_token(client, test_user, test_access_token):
+    # Test protected route with our test token
     response = client.get(
         "/api/v1/users/me",
-        headers={"Authorization": f"Bearer {token}"}
+        headers={"Authorization": f"Bearer {test_access_token}"}
     )
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
-    assert data["email"] == "test@example.com"
+    assert data["email"] == test_user.email
 
 def test_register_success(client, mocker):
     # Mock the email service
@@ -64,4 +54,27 @@ def test_register_success(client, mocker):
     assert data["data"]["username"] == "newuser"
     
     # Verify the email service was called
-    mock_email_service.assert_called_once() 
+    mock_email_service.assert_called_once()
+
+
+def test_login_flow(client, test_user):
+    """Test the complete login flow with actual token generation"""
+    # First login to get tokens
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": test_user.email,
+            "password": "testpassword123"
+        }
+    )
+    assert login_response.status_code == status.HTTP_200_OK
+    token = login_response.json()["data"]["access_token"]
+    
+    # Test protected route with the login token
+    response = client.get(
+        "/api/v1/users/me",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["email"] == test_user.email 

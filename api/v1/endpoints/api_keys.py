@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from db.session import get_db
 from services.api_key_service import APIKeyService
-from core.deps import get_current_user
+from core.deps import get_current_user, get_api_key_user
 from db.models.user import User
 from schemas.api_key import APIKeyCreate, APIKeyResponse, APIKeyCreateResponse, GetAPIKeyResponse
 
@@ -131,3 +131,19 @@ async def regenerate_api_key(
         }
     except HTTPException as error:
         raise error 
+    
+
+@router.get("/test", response_model=dict)
+async def test_api_key(
+    current_user: User = Depends(get_api_key_user)
+):
+    """Test an API key"""
+    return {
+        "data": {
+            "message": "API key is valid",
+            "user": {
+                "email": current_user.email,
+                "id": str(current_user.id)
+            }
+        }
+    }
