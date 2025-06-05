@@ -22,6 +22,10 @@ engine = create_engine(
     pool_recycle=3600,   # Recycle connections after 1 hour
     poolclass=StaticPool,
 )
+
+# Create all tables once for the test session
+Base.metadata.create_all(bind=engine)
+
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 @pytest.fixture(scope="session", autouse=True)
@@ -32,16 +36,23 @@ def setup_test_env():
     # Clean up if needed
     if "JWT_SECRET_KEY" in os.environ:
         del os.environ["JWT_SECRET_KEY"]
+    # Clean up database at the end of test session
+    Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture(scope="function")
 def db_session():
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
+    """Provide a clean database session for each test function.
+    Instead of dropping all tables, we use transactions to roll back changes."""
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = TestingSessionLocal(bind=connection)
+
     try:
-        yield db
+        yield session
     finally:
-        db.close()
-        Base.metadata.drop_all(bind=engine)
+        session.close()
+        transaction.rollback()
+        connection.close()
 
 @pytest.fixture(scope="function")
 def client(db_session):
@@ -49,7 +60,7 @@ def client(db_session):
         try:
             yield db_session
         finally:
-            db_session.close()
+            pass  # Session cleanup is handled by db_session fixture
     
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as test_client:
@@ -67,14 +78,8 @@ def test_user(db_session):
     }
     hashed_password = get_password_hash("testpassword123")
     user = UserCRUD(db_session).create(UserCreate(**user_data, password=hashed_password))
-    db_session.refresh(user)  # Ensure user is attached to session
-    
-    yield user  # Use yield instead of return
-    
-    # Cleanup
-    db_session.rollback()  # Rollback any pending changes
-    if user in db_session:
-        db_session.refresh(user)  # Refresh before using in cleanup
+    db_session.refresh(user)
+    return user  # No need for cleanup as we're using transaction rollback
 
 @pytest.fixture(scope="function")
 def test_access_token(test_user):
@@ -131,24 +136,6 @@ def test_api_key_with_no_expiration(db_session, test_user):
     return raw_key, api_key
 
 @pytest.fixture(scope="function")
-def test_invalid_api_key(db_session, test_user):
-    from services.api_key_service import APIKeyService
-    api_key_service = APIKeyService(db_session)
-    raw_key, api_key = api_key_service.create_api_key(test_user.id, "Test API Key", 30)
-    api_key.is_active = False
-    db_session.commit()
-    return raw_key, api_key
-
-@pytest.fixture(scope="function")
-def test_inactive_api_key(db_session, test_user):
-    from services.api_key_service import APIKeyService
-    api_key_service = APIKeyService(db_session)
-    raw_key, api_key = api_key_service.create_api_key(test_user.id, "Test API Key", 30)
-    api_key.is_active = False
-    db_session.commit()
-    return raw_key, api_key
-
-@pytest.fixture(scope="function")
 def test_category(db_session, test_user):
     from db.models.category import Category
     category = Category(
@@ -159,18 +146,11 @@ def test_category(db_session, test_user):
     db_session.add(category)
     db_session.commit()
     db_session.refresh(category)
-    
-    # Add cleanup to ensure proper session management
-    yield category
-    
-    db_session.rollback()
-    if category in db_session:
-        db_session.refresh(category)
+    return category
 
 @pytest.fixture(scope="function")
 def test_budget(db_session, test_user, test_category):
     from db.models.budget import Budget
-    from datetime import datetime, timedelta
     
     start_date = datetime.now(timezone.utc)
     end_date = start_date + timedelta(days=30)
@@ -194,7 +174,6 @@ def test_budget(db_session, test_user, test_category):
 
 @pytest.fixture(scope="function")
 def test_budget_data():
-    from datetime import datetime, timedelta
     start_date = datetime.now(timezone.utc)
     end_date = start_date + timedelta(days=30)
     
@@ -205,3 +184,29 @@ def test_budget_data():
         "start_date": start_date.isoformat(),
         "end_date": end_date.isoformat()
     }
+
+@pytest.fixture(scope="function")
+def test_pot_data():
+    return {
+        "name": "Test Pot",
+        "description": "Test Pot Description",
+        "target_amount": 1000,
+        "color": "#FF0000"
+    }
+
+@pytest.fixture(scope="function")
+def test_pot(db_session, test_user):
+    from db.models.pots import Pot
+    
+    pot = Pot(
+        name="Test Pot",
+        description="Test Pot Description",
+        target_amount=1000,
+        saved_amount=0,
+        color="#FF0000",
+        user_id=test_user.id
+    )
+    db_session.add(pot)
+    db_session.commit()
+    db_session.refresh(pot)
+    return pot  # No need for cleanup as we're using transaction rollback
