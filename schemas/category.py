@@ -5,6 +5,7 @@ from typing import Optional
 class CategoryBase(BaseModel):
     name: str
     color: Optional[str] = None
+    description: Optional[str] = None
 
 class CategoryCreate(CategoryBase):
     pass
