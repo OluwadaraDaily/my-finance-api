@@ -18,6 +18,7 @@ class User(Base):
     
     accounts = relationship("Account", back_populates="user")
     budgets = relationship("Budget", back_populates="user")
+    pots = relationship("Pot", back_populates="user")
     user_auth = relationship("UserAuth", back_populates="user")
     activation_token = relationship("ActivationToken", back_populates="user", uselist=False)
     api_keys = relationship("APIKey", back_populates="user")
