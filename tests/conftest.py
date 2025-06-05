@@ -147,3 +147,61 @@ def test_inactive_api_key(db_session, test_user):
     api_key.is_active = False
     db_session.commit()
     return raw_key, api_key
+
+@pytest.fixture(scope="function")
+def test_category(db_session, test_user):
+    from db.models.category import Category
+    category = Category(
+        name="Test Category",
+        description="Test Category Description",
+        user_id=test_user.id
+    )
+    db_session.add(category)
+    db_session.commit()
+    db_session.refresh(category)
+    
+    # Add cleanup to ensure proper session management
+    yield category
+    
+    db_session.rollback()
+    if category in db_session:
+        db_session.refresh(category)
+
+@pytest.fixture(scope="function")
+def test_budget(db_session, test_user, test_category):
+    from db.models.budget import Budget
+    from datetime import datetime, timedelta
+    
+    start_date = datetime.now(timezone.utc)
+    end_date = start_date + timedelta(days=30)
+    
+    budget = Budget(
+        user_id=test_user.id,
+        category_id=test_category.id,
+        name="Test Budget",
+        description="Test Budget Description",
+        total_amount=1000,
+        spent_amount=0,
+        remaining_amount=1000,
+        start_date=start_date,
+        end_date=end_date,
+        is_active=True
+    )
+    db_session.add(budget)
+    db_session.commit()
+    db_session.refresh(budget)
+    return budget
+
+@pytest.fixture(scope="function")
+def test_budget_data():
+    from datetime import datetime, timedelta
+    start_date = datetime.now(timezone.utc)
+    end_date = start_date + timedelta(days=30)
+    
+    return {
+        "name": "New Test Budget",
+        "description": "New Test Budget Description",
+        "total_amount": 2000,
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat()
+    }
