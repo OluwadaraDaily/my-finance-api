@@ -30,7 +30,8 @@ class CategoryService:
         db_category = Category(
             name=category_data.name,
             user_id=user_id,
-            color=category_data.color
+            color=category_data.color,
+            description=category_data.description
         )
         self.db.add(db_category)
         self.db.commit()
