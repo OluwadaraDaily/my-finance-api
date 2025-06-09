@@ -210,3 +210,39 @@ def test_pot(db_session, test_user):
     db_session.commit()
     db_session.refresh(pot)
     return pot  # No need for cleanup as we're using transaction rollback
+
+@pytest.fixture(scope="function")
+def test_account(db_session, test_user):
+    from db.models.account import Account
+    account = Account(
+        user_id=test_user.id,
+        balance=5000  # Initial balance of 5000
+    )
+    db_session.add(account)
+    db_session.commit()
+    db_session.refresh(account)
+    return account
+
+@pytest.fixture(scope="function")
+def test_transaction_data(test_account, test_user, test_category):
+    return {
+        "account_id": test_account.id,
+        "category_id": test_category.id,
+        "description": "Test Transaction",
+        "recipient": "Test Recipient",
+        "sender": "Test Sender",
+        "amount": 1000,
+        "type": "DEBIT",  # Using string instead of enum
+        "transaction_date": datetime.now(timezone.utc).isoformat(),  # Convert to ISO format string
+        "meta_data": {"test_key": "test_value"},
+        "user_id": test_user.id
+    }
+
+@pytest.fixture(scope="function")
+def test_transaction(db_session, test_transaction_data):
+    from db.models.transaction import Transaction
+    transaction = Transaction(**test_transaction_data)
+    db_session.add(transaction)
+    db_session.commit()
+    db_session.refresh(transaction)
+    return transaction

@@ -12,6 +12,7 @@ from crud.user import UserCRUD
 from core.jwt import ACCESS_TOKEN_EXPIRE_MINUTES
 from jose import JWTError
 from db.models.activation_token import ActivationToken
+from services.account_service import AccountService
 import os
 
 class AuthService:
@@ -51,7 +52,7 @@ class AuthService:
             username=db_user.username,
             activation_token=activation_token.token
         )
-        
+
         return {
             "message": "User registered successfully. Please check your email to activate your account.",
             "data": UserSchema.model_validate(db_user)
@@ -281,9 +282,20 @@ class AuthService:
         # Mark token as used
         activation_token.is_used = True
         
+        # Create an account for the user
+        account_service = AccountService(self.db)
+        account = account_service.get_or_create_account(user.id)
+
+        # Update user with account_id
+        user.account_id = account.id
+        
         self.db.commit()
+        self.db.refresh(user)
         
         return {
             "message": "Account activated successfully",
-            "data": UserSchema.model_validate(user)
+            "data": {
+                "user": UserSchema.model_validate(user),
+                "account": account
+            }
         } 

@@ -1,7 +1,7 @@
 # FastAPI app entry point
 
 from fastapi import FastAPI
-from api.v1.endpoints import auth_router, users_router, api_keys_router, categories_router, budgets_router, pots_router
+from api.v1.endpoints import auth_router, users_router, api_keys_router, categories_router, budgets_router, pots_router, transactions_router, accounts_router
 from db.session import engine
 from db.base import Base
 from db.models import *  # This imports all models
@@ -17,14 +17,25 @@ async def lifespan(app: FastAPI):
     # Shutdown
     pass
 
-app = FastAPI(lifespan=lifespan)
+# Create FastAPI app
+app = FastAPI(
+    title="My Finance API",
+    description="API for managing personal finances",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+)
 
-app.include_router(auth_router, prefix="/api/v1/auth")
-app.include_router(users_router, prefix="/api/v1/users")
-app.include_router(api_keys_router, prefix="/api/v1/api-keys")
-app.include_router(categories_router, prefix="/api/v1/categories")
-app.include_router(budgets_router, prefix="/api/v1/budgets")
-app.include_router(pots_router, prefix="/api/v1/pots")
+# Include routers
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(users_router, prefix="/api/v1/users", tags=["users"])
+app.include_router(api_keys_router, prefix="/api/v1/api-keys", tags=["api-keys"])
+app.include_router(categories_router, prefix="/api/v1/categories", tags=["categories"])
+app.include_router(budgets_router, prefix="/api/v1/budgets", tags=["budgets"])
+app.include_router(pots_router, prefix="/api/v1/pots", tags=["pots"])
+app.include_router(transactions_router, prefix="/api/v1/transactions", tags=["transactions"])
+app.include_router(accounts_router, prefix="/api/v1/accounts", tags=["accounts"])
 
 class EmailRequest(BaseModel):
     email: EmailStr

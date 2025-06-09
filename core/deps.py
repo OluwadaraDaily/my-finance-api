@@ -4,6 +4,7 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from typing import Generator, Optional
 import os
+import logging
 
 from db.session import get_db
 from db.models.user_auth import UserAuth
@@ -22,22 +23,44 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ):
+    logger = logging.getLogger(__name__)
     try:
         # Extract token from credentials
         token = credentials.credentials
+        logger.info("Received token from credentials")
         
         # Use test secret key if in test environment
         secret_key = os.getenv("JWT_SECRET_KEY")
-        payload = verify_token(token, secret_key=secret_key)
+        logger.info(f"Using JWT secret key: {'[MASKED]' if secret_key else 'None'}")
         
-        if not payload or "sub" not in payload:
+        try:
+            payload = verify_token(token, secret_key=secret_key)
+            logger.info(f"Token verification successful. Payload: {payload}")
+        except Exception as e:
+            logger.error(f"Token verification failed: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials"
+                detail=f"Token verification failed: {str(e)}",
+                headers={"WWW-Authenticate": "Bearer"},
             )
+
+        if not payload or "sub" not in payload:
+            logger.error(f"Invalid payload structure: {payload}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials - missing subject"
+            )
+            
+        logger.info(f"Looking up user with email: {payload['sub']}")
         
-        user = UserCRUD(db).get_by_email(payload["sub"])
+        # Create a new UserCRUD instance with the current session
+        user_crud = UserCRUD(db)
+        user = user_crud.get_by_email(payload["sub"])
+        
+        logger.info(f"User lookup result: {user}")
+        
         if not user:
+            logger.error(f"No user found for email: {payload['sub']}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User not found",
@@ -46,16 +69,20 @@ async def get_current_user(
         
         return user
         
-    except JWTError:
+    except JWTError as e:
+        logger.error(f"JWT Error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired or is invalid",
+            detail=f"Token has expired or is invalid: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except Exception:
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in authentication: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
+            detail=f"Invalid authentication credentials: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
