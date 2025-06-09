@@ -71,6 +71,7 @@ def client(db_session):
 def test_user(db_session):
     from crud.user import UserCRUD
     from schemas.user import UserCreate
+    from services.account_service import AccountService
     
     user_data = {
         "email": "test@example.com",
@@ -78,8 +79,15 @@ def test_user(db_session):
     }
     hashed_password = get_password_hash("testpassword123")
     user = UserCRUD(db_session).create(UserCreate(**user_data, password=hashed_password))
+    
+    # Create and associate account
+    account_service = AccountService(db_session)
+    account = account_service.get_or_create_account(user.id)
+    user.is_activated = True
+    db_session.commit()
     db_session.refresh(user)
-    return user  # No need for cleanup as we're using transaction rollback
+    
+    return user
 
 @pytest.fixture(scope="function")
 def test_access_token(test_user):
@@ -136,12 +144,25 @@ def test_api_key_with_no_expiration(db_session, test_user):
     return raw_key, api_key
 
 @pytest.fixture(scope="function")
+def test_account(db_session, test_user):
+    from db.models.account import Account
+    account = Account(
+        user_id=test_user.id,
+        balance=5000  # Initial balance of 5000
+    )
+    db_session.add(account)
+    db_session.commit()
+    db_session.refresh(account)
+    return account
+
+@pytest.fixture(scope="function")
 def test_category(db_session, test_user):
     from db.models.category import Category
     category = Category(
         name="Test Category",
         description="Test Category Description",
-        user_id=test_user.id
+        user_id=test_user.id,
+        color="#FF0000"
     )
     db_session.add(category)
     db_session.commit()
@@ -209,31 +230,21 @@ def test_pot(db_session, test_user):
     db_session.add(pot)
     db_session.commit()
     db_session.refresh(pot)
-    return pot  # No need for cleanup as we're using transaction rollback
+    return pot
 
 @pytest.fixture(scope="function")
-def test_account(db_session, test_user):
-    from db.models.account import Account
-    account = Account(
-        user_id=test_user.id,
-        balance=5000  # Initial balance of 5000
-    )
-    db_session.add(account)
-    db_session.commit()
-    db_session.refresh(account)
-    return account
-
-@pytest.fixture(scope="function")
-def test_transaction_data(test_account, test_user, test_category):
+def test_transaction_data(test_user, test_category, test_budget, test_pot):
     return {
-        "account_id": test_account.id,
+        "account_id": test_user.account.id,
         "category_id": test_category.id,
+        "budget_id": test_budget.id,
+        "pot_id": test_pot.id,
         "description": "Test Transaction",
         "recipient": "Test Recipient",
         "sender": "Test Sender",
         "amount": 1000,
-        "type": "DEBIT",  # Using string instead of enum
-        "transaction_date": datetime.now(timezone.utc).isoformat(),  # Convert to ISO format string
+        "type": "DEBIT",
+        "transaction_date": datetime.now(timezone.utc).isoformat(),
         "meta_data": {"test_key": "test_value"},
         "user_id": test_user.id
     }

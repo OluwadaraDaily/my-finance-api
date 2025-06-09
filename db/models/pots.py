@@ -17,6 +17,7 @@ class Pot(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     user = relationship("User", back_populates="pots")
+    transactions = relationship("Transaction", back_populates="pot")
 
     def __repr__(self):
         return f"<Pot {self.name}>"

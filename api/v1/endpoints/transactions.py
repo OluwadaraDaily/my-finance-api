@@ -123,6 +123,57 @@ async def get_transaction(
         message="Transaction fetched successfully"
     )
 
+@router.get("/budgets/{budget_id}", response_model=ListResponseModel[Transaction])
+async def get_transactions_by_budget(
+    budget_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all transactions by budget"""
+    transaction_service = TransactionService(db)
+    transactions = transaction_service.get_transactions_by_budget(
+        budget_id=budget_id,
+        account_id=current_user.account.id
+    )
+    return ListResponseModel[Transaction](
+        data=transactions,
+        message="Transactions fetched successfully"
+    )
+
+@router.get("/pots/{pot_id}", response_model=ListResponseModel[Transaction])
+async def get_transactions_by_pot(
+    pot_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all transactions by pot"""
+    transaction_service = TransactionService(db)
+    transactions = transaction_service.get_transactions_by_pot(
+        pot_id=pot_id,
+        account_id=current_user.account.id
+    )
+    return ListResponseModel[Transaction](
+        data=transactions,
+        message="Transactions fetched successfully"
+    )
+
+@router.get("/categories/{category_id}", response_model=ListResponseModel[Transaction])
+async def get_transactions_by_category(
+    category_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all transactions by category"""
+    transaction_service = TransactionService(db)
+    transactions = transaction_service.get_transactions_by_category(
+        category_id=category_id,
+        account_id=current_user.account.id
+    )
+    return ListResponseModel[Transaction](
+        data=transactions,
+        message="Transactions fetched successfully"
+    )
+
 @router.put("/{transaction_id}", response_model=ResponseModel[Transaction])
 async def update_transaction(
     transaction_id: int,

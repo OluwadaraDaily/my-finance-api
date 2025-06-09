@@ -98,9 +98,7 @@ class TransactionService:
                 query = query.filter(Transaction.sender.ilike(f"%{filters.sender}%"))
             if filters.pot_id:
                 query = query.filter(Transaction.pot_id == filters.pot_id)
-            if filters.account_id:
-                query = query.filter(Transaction.account_id == filters.account_id)
-                
+
         # Apply sorting
         sort_column = getattr(Transaction, sort_by, Transaction.transaction_date)
         if sort_order.lower() == "desc":
@@ -190,3 +188,15 @@ class TransactionService:
             "total_expense": total_expense,
             "net_amount": total_income - total_expense
         } 
+    
+    def get_transactions_by_budget(self, budget_id: int, account_id: int) -> List[Transaction]:
+        """Get all transactions by budget"""
+        return self.db.query(Transaction).filter(Transaction.budget_id == budget_id, Transaction.account_id == account_id).all()
+    
+    def get_transactions_by_pot(self, pot_id: int, account_id: int) -> List[Transaction]:
+        """Get all transactions by pot"""
+        return self.db.query(Transaction).filter(Transaction.pot_id == pot_id, Transaction.account_id == account_id).all()
+    
+    def get_transactions_by_category(self, category_id: int, account_id: int) -> List[Transaction]:
+        """Get all transactions by category"""
+        return self.db.query(Transaction).filter(Transaction.category_id == category_id, Transaction.account_id == account_id).all()
