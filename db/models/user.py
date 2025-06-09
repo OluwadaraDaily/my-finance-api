@@ -1,6 +1,6 @@
 # SQLAlchemy User model
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -16,13 +16,14 @@ class User(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     
-    accounts = relationship("Account", back_populates="user")
+    account = relationship("Account", back_populates="user", uselist=False)
     budgets = relationship("Budget", back_populates="user")
     pots = relationship("Pot", back_populates="user")
     user_auth = relationship("UserAuth", back_populates="user")
     activation_token = relationship("ActivationToken", back_populates="user", uselist=False)
     api_keys = relationship("APIKey", back_populates="user")
     categories = relationship("Category", back_populates="user")
-
+    transactions = relationship("Transaction", back_populates="user")
+    
     def __repr__(self):
         return f"<User {self.username}>"
