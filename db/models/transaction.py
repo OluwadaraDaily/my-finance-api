@@ -12,6 +12,7 @@ class Transaction(Base):
     category_id = Column(Integer, ForeignKey("categories.id"))
     budget_id = Column(Integer, ForeignKey("budgets.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
+    pot_id = Column(Integer, ForeignKey("pots.id"))
     description = Column(String(255), nullable=True)
     recipient = Column(String(255), index=True, nullable=True)
     sender = Column(String(255), index=True, nullable=True)
@@ -27,6 +28,7 @@ class Transaction(Base):
     account = relationship("Account", back_populates="transactions")
     category = relationship("Category", back_populates="transactions")
     budget = relationship("Budget", back_populates="transactions")
-
+    pot = relationship("Pot", back_populates="transactions")
+    
     def __repr__(self):
         return f"<Transaction {self.id}>"

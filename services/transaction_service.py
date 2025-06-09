@@ -49,7 +49,8 @@ class TransactionService:
             type=transaction_data.type,
             transaction_date=transaction_data.transaction_date,
             meta_data=transaction_data.meta_data,
-            user_id=user.id
+            user_id=user.id,
+            pot_id=transaction_data.pot_id
         )
         self.db.add(db_transaction)
         self.db.commit()
@@ -95,7 +96,11 @@ class TransactionService:
                 query = query.filter(Transaction.recipient.ilike(f"%{filters.recipient}%"))
             if filters.sender:
                 query = query.filter(Transaction.sender.ilike(f"%{filters.sender}%"))
-
+            if filters.pot_id:
+                query = query.filter(Transaction.pot_id == filters.pot_id)
+            if filters.account_id:
+                query = query.filter(Transaction.account_id == filters.account_id)
+                
         # Apply sorting
         sort_column = getattr(Transaction, sort_by, Transaction.transaction_date)
         if sort_order.lower() == "desc":

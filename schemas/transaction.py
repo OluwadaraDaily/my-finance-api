@@ -18,6 +18,7 @@ class TransactionBase(BaseModel):
 class TransactionCreate(TransactionBase):
     category_id: Optional[int] = None
     budget_id: Optional[int] = None
+    pot_id: Optional[int] = None
     sender: Optional[str] = None
 
 class TransactionUpdate(BaseModel):
@@ -29,6 +30,7 @@ class TransactionUpdate(BaseModel):
     transaction_date: Optional[datetime] = None
     category_id: Optional[int] = None
     budget_id: Optional[int] = None
+    pot_id: Optional[int] = None
     meta_data: Optional[Dict] = None
 
 class TransactionFilter(BaseModel):
@@ -41,7 +43,7 @@ class TransactionFilter(BaseModel):
     max_amount: Optional[int] = None
     recipient: Optional[str] = None
     sender: Optional[str] = None
-
+    pot_id: Optional[int] = None
 class Transaction(TransactionBase):
     id: int
     account_id: int
@@ -49,6 +51,7 @@ class Transaction(TransactionBase):
     sender: Optional[str] = None
     budget_id: Optional[int]
     created_at: datetime
+    pot_id: Optional[int]
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True) 
