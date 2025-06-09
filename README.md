@@ -13,22 +13,25 @@ This API serves as the backend service for [My Finance UI](https://github.com/Ol
 - Data validation and error handling
 - Database integration
 - API documentation
+- Testing
 
 ## Tech Stack
 
 - Python (Fast API)
+- Pytest
 - MySQL
 
 ## Prerequisites
 
 - Python
 - pip
+- venv (For virtual environment)
 
 
 
 ## API Documentation
 
-API documentation is available at `/api-docs` when running the server.
+API documentation is available at `/docs` when running the server.
 
 ## Contributing
 
