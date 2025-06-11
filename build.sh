@@ -4,15 +4,8 @@ set -o errexit
 
 echo "🚀 Starting build process..."
 
-# Update apt with verbose logging
-echo "📦 Updating apt packages..."
-apt-get clean
-apt-get update -y
-
-echo "📦 Installing system dependencies..."
-apt-get install -y python3-dev default-libmysqlclient-dev build-essential pkg-config
-
 echo "🐍 Installing Python dependencies..."
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 pip install mysqlclient mysql-connector-python
 
