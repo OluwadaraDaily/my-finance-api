@@ -1,6 +1,7 @@
 # FastAPI app entry point
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from api.v1.endpoints import auth_router, users_router, api_keys_router, categories_router, budgets_router, pots_router, transactions_router, accounts_router
 from db.session import engine
 from db.base import Base
@@ -25,6 +26,15 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:8000"],
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
 # Include routers
