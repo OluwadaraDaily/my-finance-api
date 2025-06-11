@@ -11,8 +11,7 @@ from schemas.transaction import (
     Transaction,
     TransactionCreate,
     TransactionUpdate,
-    TransactionFilter,
-    TransactionSummaryRequest
+    TransactionFilter
 )
 from schemas.common import ResponseModel, ListResponseModel
 
