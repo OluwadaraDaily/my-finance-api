@@ -83,6 +83,16 @@ class AuthService:
         
         # Use test secret key if in test environment
         secret_key = os.getenv("JWT_SECRET_KEY")
+
+        # Invalidate all existing and active tokens for the user
+        self.db.query(UserAuth).filter(
+            UserAuth.user_id == db_user.id,
+            UserAuth.is_active == True
+        ).update({
+            "is_active": False,
+            "is_expired": True
+        })
+        self.db.commit()
         
         # Create tokens
         access_token = create_access_token(
@@ -299,3 +309,25 @@ class AuthService:
                 "account": account
             }
         } 
+    
+    async def validate_token(self, access_token: str) -> dict:
+        """
+        Validate a token.
+        """
+        try:
+            payload = verify_token(access_token)
+            email = payload.get("sub")
+            if email is None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid access token"
+                )
+        
+            return {
+                "message": "Token validated successfully"
+            }
+        except JWTError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid access token"
+            )

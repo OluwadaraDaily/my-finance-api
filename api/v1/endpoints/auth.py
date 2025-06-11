@@ -54,3 +54,11 @@ async def logout(request: LogoutRequest, db: Session = Depends(get_db)) -> dict:
     auth_service = AuthService(db)
     return await auth_service.logout(request.access_token)
 
+@router.post("/validate-token")
+async def validate_token(request: LogoutRequest, db: Session = Depends(get_db)) -> dict:
+    """
+    Validate a token.
+    """
+    auth_service = AuthService(db)
+    return await auth_service.validate_token(request.access_token)
+
