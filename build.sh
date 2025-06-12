@@ -9,19 +9,13 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 pip install mysqlclient mysql-connector-python
 
-echo "🔧 Initializing Alembic..."
-# Initialize alembic if it hasn't been initialized
-if [ ! -d "alembic" ]; then
-    alembic init alembic
-    
-    # Update alembic.ini with correct settings
-    sed -i "s|sqlalchemy.url = .*|sqlalchemy.url = ${DB_URL}|" alembic.ini
-    
-    # Replace the default env.py with our template
+echo "🔧 Configuring Alembic..."
+# Update alembic.ini with correct database URL for deployment
+sed -i "s|sqlalchemy.url = .*|sqlalchemy.url = ${DB_URL}|" alembic.ini
+
+# Ensure env.py is properly configured (in case it needs updating)
+if [ -f "alembic_env_template.py" ]; then
     cp alembic_env_template.py alembic/env.py
-    
-    # Create initial migration
-    alembic revision --autogenerate -m "Initial migration"
 fi
 
 echo "🔄 Running database migrations..."

@@ -1,0 +1,83 @@
+Alembic Commands Reference
+========================
+
+Database Migration Commands
+--------------------------
+
+1. Create a new migration:
+   alembic revision --autogenerate -m "Description of your changes"
+   
+   This command:
+   - Detects changes in your SQLAlchemy models
+   - Creates a new migration file in alembic/versions/
+   - Always review the generated file before applying!
+
+2. Apply migrations:
+   alembic upgrade head                 # Apply all pending migrations
+   alembic upgrade +1                   # Apply next migration
+   alembic upgrade <revision_id>        # Apply up to a specific revision
+
+3. Rollback migrations:
+   alembic downgrade -1                 # Rollback one migration
+   alembic downgrade base               # Rollback all migrations
+   alembic downgrade <revision_id>      # Rollback to a specific revision
+
+Information Commands
+------------------
+
+4. View migration history:
+   alembic history                      # Show all migrations
+   alembic history --verbose            # Show detailed history
+
+5. Check current state:
+   alembic current                      # Show current revision
+   alembic heads                        # Show latest revision(s)
+
+6. Generate SQL without executing:
+   alembic upgrade head --sql           # Preview SQL for pending migrations
+
+7. Create manual migration
+   alembic revision -m "description"     # Create empty migration file
+   
+   This command:
+   - Creates a blank migration file that you can edit manually
+   - Use when auto-generate doesn't capture your changes
+   - Useful for custom SQL operations or data migrations
+   - Migration file will need manual implementation of upgrade() and downgrade()
+
+
+Best Practices
+-------------
+
+1. Always review generated migration files before applying
+2. Keep migrations small and focused
+3. Add meaningful descriptions to migrations
+4. Test migrations both up and down
+5. Include migrations in version control
+6. Back up database before applying migrations in production
+7. Never edit a migration that's been applied to production
+
+Common Issues
+------------
+
+1. "Can't locate revision":
+   - Make sure all migration files are in alembic/versions/
+   - Check if __pycache__ is interfering
+
+2. "Target database is not up to date":
+   - Run `alembic current` to check state
+   - Run `alembic heads` to check latest version
+   - Apply pending migrations with `alembic upgrade head`
+
+3. "Requested revision not found":
+   - Ensure all migration files are present
+   - Check if you're using correct revision ID
+
+Directory Structure
+-----------------
+
+alembic/
+├── versions/           # Migration files
+├── env.py             # Alembic environment configuration
+├── script.py.mako     # Migration file template
+└── alembic_commands.txt   # This reference file 
