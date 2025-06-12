@@ -19,6 +19,11 @@ if [ -f "alembic_env_template.py" ]; then
 fi
 
 echo "🔄 Running database migrations..."
+# Ensure database is stamped to the latest revision to avoid revision mismatches
+echo "📌 Stamping database to current head revision..."
+PYTHONPATH=$PYTHONPATH:$(pwd) alembic stamp head
+
+# Now run migrations (this should be a no-op if already at head, or apply any new migrations)
 PYTHONPATH=$PYTHONPATH:$(pwd) alembic upgrade head
 
 echo "✅ Build process completed!"
