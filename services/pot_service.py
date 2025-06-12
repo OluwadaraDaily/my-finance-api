@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from db.models.pots import Pot
-from schemas.pot import PotCreate, PotUpdate
+from schemas.pot import PotCreate, PotUpdate, PotSummary
 from typing import List, Optional
 from fastapi import HTTPException
 from datetime import datetime, timezone
@@ -95,3 +95,17 @@ class PotService:
         self.db.commit()
         self.db.refresh(pot)
         return pot 
+    
+    def get_pot_summary(self, user_id: int) -> PotSummary:
+        """Get the summary of all pots for a user"""
+        pots = self.get_pots(user_id)
+        total_saved_amount = sum(pot.saved_amount for pot in pots) if pots else 0
+        total_target_amount = sum(pot.target_amount for pot in pots) if pots else 0
+        average_progress = total_saved_amount / total_target_amount if total_target_amount > 0 else 0
+        pots = self.get_pots(user_id, limit=4)
+        return PotSummary(
+            total_saved_amount=total_saved_amount, 
+            total_target_amount=total_target_amount, 
+            average_progress=average_progress,
+            pots=pots
+        )

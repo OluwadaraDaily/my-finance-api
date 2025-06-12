@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict
 
 class PotBase(BaseModel):
@@ -25,3 +25,9 @@ class Pot(PotBase):
     saved_amount: int
     
     model_config = ConfigDict(from_attributes=True)
+
+class PotSummary(BaseModel):
+    total_saved_amount: int
+    total_target_amount: int
+    average_progress: float
+    pots: List[Pot]

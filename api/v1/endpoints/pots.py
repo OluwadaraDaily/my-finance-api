@@ -5,7 +5,7 @@ from db.models.user import User
 from db.session import get_db
 from sqlalchemy.orm import Session
 from services.pot_service import PotService
-from schemas.pot import Pot, PotCreate, PotUpdate, UpdateSavedAmount
+from schemas.pot import Pot, PotCreate, PotUpdate, UpdateSavedAmount, PotSummary
 from schemas.common import ResponseModel, ListResponseModel
 
 router = APIRouter()
@@ -37,6 +37,19 @@ async def get_pots(
     return ListResponseModel[Pot](
         data=pots,
         message="Pots fetched successfully"
+    )
+
+@router.get("/summary", response_model=ResponseModel[PotSummary])
+async def get_pot_summary(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get the summary of all pots for the current user"""
+    pot_service = PotService(db)
+    summary = pot_service.get_pot_summary(current_user.id)
+    return ResponseModel[PotSummary](
+        data=summary,
+        message="Pot summary fetched successfully"
     )
 
 @router.get("/{pot_id}", response_model=ResponseModel[Pot])

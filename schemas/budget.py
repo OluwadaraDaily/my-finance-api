@@ -1,6 +1,7 @@
 from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
+from typing import List
 
 class BudgetBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
@@ -36,3 +37,15 @@ class BudgetInDB(BudgetBase):
 
 class Budget(BudgetInDB):
     pass 
+
+
+class BudgetSummaryChart(BaseModel):
+    label: str
+    amount: int
+    color: str
+
+class BudgetSummary(BaseModel):
+    total_spent_amount: int
+    total_remaining_amount: int
+    total_budget_amount: int
+    budgets: List[BudgetSummaryChart]

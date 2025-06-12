@@ -5,7 +5,7 @@ from db.models.user import User
 from db.session import get_db
 from sqlalchemy.orm import Session
 from services.budget_service import BudgetService
-from schemas.budget import Budget, BudgetCreate, BudgetUpdate
+from schemas.budget import Budget, BudgetCreate, BudgetUpdate, BudgetSummary, BudgetSummaryChart
 from schemas.common import ResponseModel, ListResponseModel
 
 router = APIRouter()
@@ -22,6 +22,19 @@ async def create_budget(
     return ResponseModel[Budget](
         data=budget,
         message="Budget created successfully"
+    )
+
+@router.get("/summary", response_model=ResponseModel[BudgetSummary])
+async def get_budget_summary(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get the summary of all budgets for the current user"""
+    budget_service = BudgetService(db)
+    summary = budget_service.get_budget_summary(current_user.id)
+    return ResponseModel[BudgetSummary](
+        data=summary,
+        message="Budget summary fetched successfully"
     )
 
 @router.get("/", response_model=ListResponseModel[Budget])

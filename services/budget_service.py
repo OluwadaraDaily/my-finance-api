@@ -2,7 +2,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from db.models.budget import Budget
-from schemas.budget import BudgetCreate, BudgetUpdate
+from schemas.budget import BudgetCreate, BudgetUpdate, BudgetSummary, BudgetSummaryChart
 from db.models.category import Category
 from fastapi import HTTPException
 
@@ -109,3 +109,16 @@ class BudgetService:
         self.db.commit()
         self.db.refresh(db_budget)
         return db_budget 
+    
+    def get_budget_summary(self, user_id: int) -> BudgetSummary:
+        """Get the summary of all budgets for a user"""
+        budgets = self.get_budgets(user_id)
+        total_spent_amount = sum(budget.spent_amount for budget in budgets) if budgets else 0
+        total_remaining_amount = sum(budget.remaining_amount for budget in budgets) if budgets else 0
+        total_budget_amount = sum(budget.total_amount for budget in budgets) if budgets else 0
+        return BudgetSummary(
+            total_spent_amount=total_spent_amount,
+            total_remaining_amount=total_remaining_amount,
+            total_budget_amount=total_budget_amount,
+            budgets=[BudgetSummaryChart(label=budget.name, amount=budget.spent_amount, color=budget.color) for budget in budgets]
+        )
