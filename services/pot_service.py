@@ -97,7 +97,7 @@ class PotService:
         
         # Create transaction through transaction service
         transaction_data = TransactionCreate(
-            amount=amount,
+            amount=abs(amount),
             description=reason,
             type=TransactionType.CREDIT if amount > 0 else TransactionType.DEBIT,
             transaction_date=datetime.now(timezone.utc),

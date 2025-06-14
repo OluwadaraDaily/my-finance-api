@@ -190,6 +190,7 @@ class TransactionService:
         
         total_income = sum(t.amount for t in transactions if t.type == TransactionType.CREDIT)
         total_expense = sum(t.amount for t in transactions if t.type == TransactionType.DEBIT)
+        print("total_expense =>", total_expense)
         
         return {
             "total_transactions": len(transactions),
