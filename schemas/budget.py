@@ -7,9 +7,10 @@ class BudgetBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=255)
     total_amount: int = Field(..., gt=0)
-    category_id: int
+    category_id: Optional[int] = Field(None)
     start_date: datetime
     end_date: datetime
+    color: Optional[str] = Field(None, max_length=50)
 
 class BudgetCreate(BudgetBase):
     pass
@@ -22,6 +23,7 @@ class BudgetUpdate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     is_active: Optional[bool] = None
+    color: Optional[str] = Field(None, max_length=50)
 
 class BudgetInDB(BudgetBase):
     id: int

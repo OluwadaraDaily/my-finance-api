@@ -12,10 +12,6 @@ class BudgetService:
 
     def create_budget(self, user_id: int, budget_data: BudgetCreate) -> Budget:
         """Create a new budget for a user"""
-        # Verify category exists
-        category = self.db.query(Category).filter(Category.id == budget_data.category_id, Category.user_id == user_id).first()
-        if not category:
-            raise HTTPException(status_code=404, detail="Category not found")
         
         # Verify start date is before end date
         if budget_data.start_date >= budget_data.end_date:
@@ -120,5 +116,5 @@ class BudgetService:
             total_spent_amount=total_spent_amount,
             total_remaining_amount=total_remaining_amount,
             total_budget_amount=total_budget_amount,
-            budgets=[BudgetSummaryChart(label=budget.name, amount=budget.spent_amount, color=budget.color) for budget in budgets]
+            budgets=[BudgetSummaryChart(label=budget.name, amount=budget.total_amount, color=budget.color) for budget in budgets]
         )

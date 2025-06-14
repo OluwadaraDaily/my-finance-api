@@ -1,7 +1,9 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum as PyEnum
+from .budget import Budget
+from .pot import Pot
 
 class TransactionType(PyEnum):
     DEBIT = "DEBIT"
@@ -44,6 +46,7 @@ class TransactionFilter(BaseModel):
     recipient: Optional[str] = None
     sender: Optional[str] = None
     pot_id: Optional[int] = None
+
 class Transaction(TransactionBase):
     id: int
     account_id: int
@@ -53,12 +56,38 @@ class Transaction(TransactionBase):
     created_at: datetime
     pot_id: Optional[int]
     updated_at: datetime
+    budget: Optional[Budget] = None
+    pot: Optional[Pot] = None
 
-    model_config = ConfigDict(from_attributes=True) 
-
+    model_config = ConfigDict(from_attributes=True)
 
 class TransactionSummaryRequest(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
+
+class CategoryBase(BaseModel):
+    id: int
+    name: str
+    color: str
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class CategoryWithBudget(CategoryBase):
+    budget: Optional[Budget] = None
+    
+class CategoryWithPot(CategoryBase):
+    pot: Optional[Pot] = None
+
+class TransactionResponse(TransactionBase):
+    id: int
+    account_id: int
+    category: Optional[Union[CategoryWithBudget, CategoryWithPot]] = None
+    sender: Optional[str] = None
+    budget_id: Optional[int]
+    created_at: datetime
+    pot_id: Optional[int]
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 

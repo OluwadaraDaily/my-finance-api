@@ -20,6 +20,7 @@ class Budget(Base):
     end_date = Column(DateTime(timezone=True))
     is_active = Column(Boolean, default=True)
     is_deleted = Column(Boolean, default=False)
+    color = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 

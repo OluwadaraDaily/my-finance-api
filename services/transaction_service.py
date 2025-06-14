@@ -1,12 +1,13 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, asc
 from typing import List, Optional
 from fastapi import HTTPException
 from datetime import datetime, timezone
 
 from db.models.transaction import Transaction
-from schemas.transaction import TransactionCreate, TransactionUpdate, TransactionFilter, TransactionType
+from schemas.transaction import TransactionCreate, TransactionUpdate, TransactionFilter, TransactionType, TransactionResponse
 from db.models.user import User
+from schemas.transaction import CategoryWithBudget, CategoryWithPot
 
 class TransactionService:
     def __init__(self, db: Session):
@@ -74,7 +75,15 @@ class TransactionService:
         filters: Optional[TransactionFilter] = None
     ) -> List[Transaction]:
         """Get all transactions with filtering and sorting"""
-        query = self.db.query(Transaction).filter(Transaction.account_id == account_id)
+        # Start with a query that eagerly loads budget and pot
+        query = (
+            self.db.query(Transaction)
+            .filter(Transaction.account_id == account_id)
+            .options(
+                joinedload(Transaction.budget),
+                joinedload(Transaction.pot)
+            )
+        )
 
         # Apply filters if provided
         if filters:
