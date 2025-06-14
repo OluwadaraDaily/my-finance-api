@@ -18,7 +18,8 @@ class PotUpdate(BaseModel):
     saved_amount: Optional[int] = Field(None, ge=0)
 
 class UpdateSavedAmount(BaseModel):
-    amount: int = Field(...)
+    amount: int = Field(..., description="Amount to add (positive) or withdraw (negative) from the pot")
+    reason: str = Field(..., min_length=1, max_length=255, description="Reason for updating the saved amount")
 
 class Pot(PotBase):
     id: int

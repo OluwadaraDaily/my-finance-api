@@ -1,13 +1,18 @@
 from sqlalchemy.orm import Session
 from db.models.pots import Pot
+from db.models.transaction import Transaction
 from schemas.pot import PotCreate, PotUpdate, PotSummary
+from schemas.transaction import TransactionType, TransactionCreate
 from typing import List, Optional
 from fastapi import HTTPException
 from datetime import datetime, timezone
+from services.transaction_service import TransactionService
+from db.models.user import User
 
 class PotService:
     def __init__(self, db: Session):
         self.db = db
+        self.transaction_service = TransactionService(db)
 
     def create_pot(self, user_id: int, pot_data: PotCreate) -> Pot:
         """Create a new pot for a user"""
@@ -72,8 +77,8 @@ class PotService:
         self.db.commit()
         return True
 
-    def update_saved_amount(self, pot_id: int, user_id: int, amount: int) -> Pot:
-        """Update the saved amount of a pot"""
+    def update_saved_amount(self, pot_id: int, user_id: int, user: User, amount: int, reason: str) -> Pot:
+        """Update the saved amount of a pot and create a transaction record"""
         pot = self.get_pot_by_id(pot_id, user_id)
         
         # Ensure the new amount is not negative
@@ -90,12 +95,25 @@ class PotService:
                 detail="Cannot exceed target amount"
             )
         
+        # Create transaction through transaction service
+        transaction_data = TransactionCreate(
+            amount=amount,
+            description=reason,
+            type=TransactionType.CREDIT if amount > 0 else TransactionType.DEBIT,
+            transaction_date=datetime.now(timezone.utc),
+            pot_id=pot_id,
+            sender="Self"
+        )
+        self.transaction_service.create_transaction(transaction_data, user)
+        
+        # Update pot's saved amount
         pot.saved_amount += amount
         pot.updated_at = datetime.now(timezone.utc)
+        
         self.db.commit()
         self.db.refresh(pot)
-        return pot 
-    
+        return pot
+
     def get_pot_summary(self, user_id: int) -> PotSummary:
         """Get the summary of all pots for a user"""
         pots = self.get_pots(user_id)

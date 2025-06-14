@@ -4,6 +4,8 @@ from services.pot_service import PotService
 from schemas.pot import PotCreate, PotUpdate
 from db.models.pots import Pot
 from fastapi import HTTPException
+from db.models.transaction import Transaction
+from schemas.transaction import TransactionType
 
 @pytest.fixture
 def test_pot_data():
@@ -117,23 +119,42 @@ def test_delete_pot(db_session, test_user, test_pot):
 
 def test_update_saved_amount(db_session, test_user, test_pot):
     service = PotService(db_session)
+    initial_balance = test_user.account.balance
     
     # Add to saved amount
-    pot = service.update_saved_amount(test_pot.id, test_user.id, 500)
+    pot = service.update_saved_amount(test_pot.id, test_user.id, test_user, 500, "Initial savings deposit")
     assert pot.saved_amount == 500
     
+    # Verify transaction was created and account balance updated
+    transaction = db_session.query(Transaction).filter_by(pot_id=test_pot.id).first()
+    assert transaction is not None
+    assert transaction.amount == 500
+    assert transaction.description == "Initial savings deposit"
+    assert transaction.type == TransactionType.CREDIT
+    assert test_user.account.balance == initial_balance + 500
+    
     # Add more to saved amount
-    pot = service.update_saved_amount(test_pot.id, test_user.id, 200)
+    pot = service.update_saved_amount(test_pot.id, test_user.id, test_user, 200, "Additional savings")
     assert pot.saved_amount == 700
+    assert test_user.account.balance == initial_balance + 700
     
     # Subtract from saved amount
-    pot = service.update_saved_amount(test_pot.id, test_user.id, -300)
+    pot = service.update_saved_amount(test_pot.id, test_user.id, test_user, -300, "Emergency withdrawal")
     assert pot.saved_amount == 400
+    assert test_user.account.balance == initial_balance + 400
+    
+    # Verify all transactions exist
+    transactions = db_session.query(Transaction).filter_by(pot_id=test_pot.id).all()
+    assert len(transactions) == 3
+    
+    # Verify the withdrawal transaction
+    withdrawal = [t for t in transactions if t.amount < 0][0]
+    assert withdrawal.amount == -300
+    assert withdrawal.description == "Emergency withdrawal"
+    assert withdrawal.type == TransactionType.DEBIT
 
 def test_update_saved_amount_negative_balance(db_session, test_user, test_pot):
     service = PotService(db_session)
-    
     with pytest.raises(HTTPException) as exc_info:
-        service.update_saved_amount(test_pot.id, test_user.id, -1000)
-    assert exc_info.value.status_code == 400
+        service.update_saved_amount(test_pot.id, test_user.id, test_user, -1000, "Attempt to withdraw too much")
     assert "Cannot reduce saved amount below zero" in str(exc_info.value.detail) 

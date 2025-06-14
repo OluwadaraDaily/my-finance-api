@@ -84,7 +84,7 @@ def test_update_saved_amount(client, auth_headers, test_pot):
     # Add to saved amount
     response = client.patch(
         f"/api/v1/pots/{test_pot.id}/update-saved-amount",
-        json={"amount": 500},
+        json={"amount": 500, "reason": "Initial savings deposit"},
         headers=auth_headers
     )
     
@@ -96,7 +96,7 @@ def test_update_saved_amount(client, auth_headers, test_pot):
     # Add more to saved amount
     response = client.patch(
         f"/api/v1/pots/{test_pot.id}/update-saved-amount",
-        json={"amount": 200},
+        json={"amount": 200, "reason": "Additional savings"},
         headers=auth_headers
     )
     
@@ -108,7 +108,7 @@ def test_update_saved_amount(client, auth_headers, test_pot):
     # Subtract from saved amount
     response = client.patch(
         f"/api/v1/pots/{test_pot.id}/update-saved-amount",
-        json={"amount": -300},
+        json={"amount": -300, "reason": "Emergency withdrawal"},
         headers=auth_headers
     )
     
@@ -120,9 +120,18 @@ def test_update_saved_amount(client, auth_headers, test_pot):
 def test_update_saved_amount_negative_balance(client, auth_headers, test_pot):
     response = client.patch(
         f"/api/v1/pots/{test_pot.id}/update-saved-amount",
-        json={"amount": -1000},
+        json={"amount": -1000, "reason": "Attempt to withdraw too much"},
         headers=auth_headers
     )
     
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert "Cannot reduce saved amount below zero" in response.json()["detail"] 
+    assert "Cannot reduce saved amount below zero" in response.json()["detail"]
+
+def test_update_saved_amount_missing_reason(client, auth_headers, test_pot):
+    response = client.patch(
+        f"/api/v1/pots/{test_pot.id}/update-saved-amount",
+        json={"amount": 500},
+        headers=auth_headers
+    )
+    
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY 

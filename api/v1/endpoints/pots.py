@@ -104,9 +104,27 @@ async def update_saved_amount(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Update the saved amount of a pot"""
+    """
+    Update the saved amount of a pot
+    
+    This endpoint allows you to:
+    - Add money to a pot (positive amount)
+    - Withdraw money from a pot (negative amount)
+    - Track the reason for the change which will be recorded as a transaction
+    
+    The transaction will be properly recorded and will affect:
+    - The pot's saved amount
+    - The account's balance
+    - The transaction history
+    """
     pot_service = PotService(db)
-    pot = pot_service.update_saved_amount(pot_id, current_user.id, request.amount)
+    pot = pot_service.update_saved_amount(
+        pot_id=pot_id,
+        user_id=current_user.id,
+        user=current_user,
+        amount=request.amount,
+        reason=request.reason
+    )
     return ResponseModel[Pot](
         data=pot,
         message="Pot saved amount updated successfully"
