@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import desc, asc
 from typing import List, Optional
 from fastapi import HTTPException
@@ -75,13 +75,13 @@ class TransactionService:
         filters: Optional[TransactionFilter] = None
     ) -> List[Transaction]:
         """Get all transactions with filtering and sorting"""
-        # Start with a query that eagerly loads budget and pot
+        # Start with a query that eagerly loads budget and pot using selectinload
         query = (
             self.db.query(Transaction)
             .filter(Transaction.account_id == account_id)
             .options(
-                joinedload(Transaction.budget),
-                joinedload(Transaction.pot)
+                selectinload(Transaction.budget),
+                selectinload(Transaction.pot)
             )
         )
 
