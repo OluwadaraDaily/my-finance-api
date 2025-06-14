@@ -20,6 +20,8 @@ load_dotenv(ENV_FILE, override=True)
 
 frontend_url = os.getenv("FRONTEND_URL")
 
+print("FRONTEND_URL =>", frontend_url)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
