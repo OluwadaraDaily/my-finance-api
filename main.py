@@ -10,6 +10,15 @@ from services.email_service import EmailService
 from pydantic import EmailStr, BaseModel
 from core.deps import get_email_core
 from contextlib import asynccontextmanager
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_FILE = os.path.join(BASE_DIR, ".env")
+load_dotenv(ENV_FILE, override=True)
+
+frontend_url = os.getenv("FRONTEND_URL")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -31,7 +40,7 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8000"],
+    allow_origins=[frontend_url],
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
