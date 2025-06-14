@@ -102,7 +102,8 @@ class PotService:
             type=TransactionType.CREDIT if amount > 0 else TransactionType.DEBIT,
             transaction_date=datetime.now(timezone.utc),
             pot_id=pot_id,
-            sender="Self"
+            sender="Self",
+            recipient=pot.name,
         )
         self.transaction_service.create_transaction(transaction_data, user)
         
