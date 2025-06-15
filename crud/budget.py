@@ -1,6 +1,6 @@
 from typing import List, Optional
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from db.models.budget import Budget
 from schemas.budget import BudgetCreate, BudgetUpdate
 from fastapi import HTTPException
@@ -33,7 +33,7 @@ class BudgetCRUD:
         """Get multiple budgets with their transactions"""
         return (
             self.db.query(Budget)
-            .options(joinedload(Budget.transactions))
+            .options(selectinload(Budget.transactions))
             .filter(Budget.user_id == user_id, Budget.is_deleted == False)
             .offset(skip)
             .limit(limit)
@@ -44,7 +44,7 @@ class BudgetCRUD:
         """Get a budget by ID with its transactions"""
         return (
             self.db.query(Budget)
-            .options(joinedload(Budget.transactions))
+            .options(selectinload(Budget.transactions))
             .filter(
                 Budget.id == budget_id,
                 Budget.user_id == user_id,
@@ -75,7 +75,7 @@ class BudgetCRUD:
         """Update the spent and remaining amounts of a budget"""
         db_budget = (
             self.db.query(Budget)
-            .options(joinedload(Budget.transactions))
+            .options(selectinload(Budget.transactions))
             .filter(Budget.id == budget_id)
             .first()
         )
