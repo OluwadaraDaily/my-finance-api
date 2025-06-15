@@ -8,10 +8,12 @@ from db.models.transaction import Transaction
 from schemas.transaction import TransactionCreate, TransactionUpdate, TransactionFilter, TransactionType, TransactionResponse
 from db.models.user import User
 from schemas.transaction import CategoryWithBudget, CategoryWithPot
+from services.budget_service import BudgetService
 
 class TransactionService:
     def __init__(self, db: Session):
         self.db = db
+        self.budget_service = BudgetService(db)
 
     def _adjust_account_balance(self, transaction: Transaction) -> None:
         """Helper method to adjust account balance based on transaction type"""
@@ -26,6 +28,32 @@ class TransactionService:
             transaction.account.balance -= transaction.amount
         else:  # DEBIT
             transaction.account.balance += transaction.amount
+
+    def _update_budget_for_transaction(self, transaction: Transaction, is_new: bool = True, old_amount: Optional[int] = None) -> None:
+        """Helper method to update budget amounts when a transaction changes"""
+        if not transaction.budget_id:
+            return
+
+        is_debit = transaction.type == TransactionType.DEBIT
+        
+        if is_new:
+            # New transaction - simply update with the full amount
+            self.budget_service.update_budget_amounts(
+                budget_id=transaction.budget_id,
+                amount_change=transaction.amount,
+                is_debit=is_debit,
+                user_id=transaction.user_id
+            )
+        else:
+            # Updated transaction - calculate the difference
+            amount_change = transaction.amount - old_amount if old_amount is not None else transaction.amount
+            if amount_change != 0:
+                self.budget_service.update_budget_amounts(
+                    budget_id=transaction.budget_id,
+                    amount_change=amount_change,
+                    is_debit=is_debit,
+                    user_id=transaction.user_id
+                )
 
     def create_transaction(self, transaction_data: TransactionCreate, user: User) -> Transaction:
         """Create a new transaction"""
@@ -57,10 +85,13 @@ class TransactionService:
         self.db.commit()
         self.db.refresh(db_transaction)
         
-        # Now update account balance
+        # Update account balance
         self._adjust_account_balance(db_transaction)
         
-        # Commit the balance change
+        # Update budget amounts if this transaction is associated with a budget
+        self._update_budget_for_transaction(db_transaction)
+        
+        # Commit all changes
         self.db.commit()
         self.db.refresh(db_transaction)
         return db_transaction
@@ -139,6 +170,7 @@ class TransactionService:
         # Store old values for balance adjustment
         old_amount = transaction.amount
         old_type = transaction.type
+        old_budget_id = transaction.budget_id
         
         # Update the transaction with the new data
         update_data = transaction_data.model_dump(exclude_unset=True)
@@ -155,6 +187,25 @@ class TransactionService:
             
             # Then apply the new transaction's effect
             self._adjust_account_balance(transaction)
+
+        # Handle budget updates
+        if old_budget_id != transaction.budget_id:
+            # If budget changed, revert changes from old budget and update new budget
+            if old_budget_id:
+                # Revert changes from old budget
+                self.budget_service.update_budget_amounts(
+                    budget_id=old_budget_id,
+                    amount_change=old_amount,
+                    is_debit=old_type == TransactionType.DEBIT,
+                    user_id=transaction.user_id
+                )
+            
+            # Update new budget if it exists
+            if transaction.budget_id:
+                self._update_budget_for_transaction(transaction)
+        else:
+            # Same budget, but amount might have changed
+            self._update_budget_for_transaction(transaction, is_new=False, old_amount=old_amount)
         
         transaction.updated_at = datetime.now(timezone.utc)
         self.db.commit()
@@ -167,6 +218,17 @@ class TransactionService:
         
         # Revert the account balance changes
         self._revert_account_balance(transaction)
+        
+        # If transaction was associated with a budget, update the budget amounts
+        if transaction.budget_id:
+            # We need to revert the transaction's effect on the budget
+            # For a deletion, this means applying the opposite of what the transaction did
+            self.budget_service.update_budget_amounts(
+                budget_id=transaction.budget_id,
+                amount_change=transaction.amount,
+                is_debit=transaction.type != TransactionType.DEBIT,
+                user_id=transaction.user_id
+            )
         
         self.db.delete(transaction)
         self.db.commit()

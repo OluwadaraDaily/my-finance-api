@@ -445,4 +445,136 @@ def test_get_transactions_by_category(db_session, test_user, test_category):
     # Test retrieving transactions for test_category_2
     category_2_transactions = service.get_transactions_by_category(category_id=test_category_2.id, account_id=test_user.account.id)
     assert len(category_2_transactions) == 1
-    assert category_2_transactions[0].category_id == test_category_2.id 
+    assert category_2_transactions[0].category_id == test_category_2.id
+
+def test_budget_amount_updates(db_session, test_user, test_category):
+    """Test that budget amounts are correctly updated when transactions change"""
+    service = TransactionService(db_session)
+    
+    # Create a test budget
+    budget = Budget(
+        user_id=test_user.id,
+        name="Test Budget",
+        description="Test Budget Description",
+        total_amount=10000,  # $100.00
+        spent_amount=0,
+        remaining_amount=10000,
+        start_date=datetime.now(timezone.utc),
+        end_date=datetime.now(timezone.utc) + timedelta(days=30),
+        is_active=True
+    )
+    db_session.add(budget)
+    db_session.commit()
+    db_session.refresh(budget)
+    
+    # Test 1: Create a debit transaction
+    transaction_data = TransactionCreate(
+        description="Test Debit Transaction",
+        amount=2000,  # $20.00
+        type=TransactionType.DEBIT,
+        transaction_date=datetime.now(timezone.utc),
+        budget_id=budget.id
+    )
+    transaction = service.create_transaction(transaction_data, test_user)
+    
+    # Verify budget amounts after debit
+    db_session.refresh(budget)
+    assert budget.spent_amount == 2000
+    assert budget.remaining_amount == 8000
+    
+    # Test 2: Create a credit transaction
+    credit_transaction_data = TransactionCreate(
+        description="Test Credit Transaction",
+        amount=1000,  # $10.00
+        type=TransactionType.CREDIT,
+        transaction_date=datetime.now(timezone.utc),
+        budget_id=budget.id
+    )
+    credit_transaction = service.create_transaction(credit_transaction_data, test_user)
+    
+    # Verify budget amounts after credit
+    db_session.refresh(budget)
+    assert budget.spent_amount == 1000  # 2000 - 1000
+    assert budget.remaining_amount == 9000
+    
+    # Test 3: Update transaction amount
+    update_data = TransactionUpdate(amount=3000)  # $30.00
+    updated_transaction = service.update_transaction(
+        transaction_id=transaction.id,
+        account_id=test_user.account.id,
+        transaction_data=update_data
+    )
+    
+    # Verify budget amounts after update
+    db_session.refresh(budget)
+    assert budget.spent_amount == 2000  # 3000 - 1000
+    assert budget.remaining_amount == 8000
+    
+    # Test 4: Delete a transaction
+    service.delete_transaction(transaction.id, test_user.account.id)
+    
+    # Verify budget amounts after deletion
+    db_session.refresh(budget)
+    assert budget.spent_amount == -1000  # Only the credit transaction remains
+    assert budget.remaining_amount == 10000  # Should be reset to total_amount since spent_amount would be negative
+
+def test_budget_change_in_transaction(db_session, test_user, test_category):
+    """Test that budget amounts are correctly updated when a transaction's budget is changed"""
+    service = TransactionService(db_session)
+    
+    # Create two test budgets
+    budget1 = Budget(
+        user_id=test_user.id,
+        name="Budget 1",
+        description="Budget 1 Description",
+        total_amount=10000,
+        spent_amount=0,
+        remaining_amount=10000,
+        start_date=datetime.now(timezone.utc),
+        end_date=datetime.now(timezone.utc) + timedelta(days=30),
+        is_active=True
+    )
+    budget2 = Budget(
+        user_id=test_user.id,
+        name="Budget 2",
+        description="Budget 2 Description",
+        total_amount=20000,
+        spent_amount=0,
+        remaining_amount=20000,
+        start_date=datetime.now(timezone.utc),
+        end_date=datetime.now(timezone.utc) + timedelta(days=30),
+        is_active=True
+    )
+    db_session.add_all([budget1, budget2])
+    db_session.commit()
+    db_session.refresh_all([budget1, budget2])
+    
+    # Create a transaction with budget1
+    transaction_data = TransactionCreate(
+        description="Test Transaction",
+        amount=5000,
+        type=TransactionType.DEBIT,
+        transaction_date=datetime.now(timezone.utc),
+        budget_id=budget1.id
+    )
+    transaction = service.create_transaction(transaction_data, test_user)
+    
+    # Verify budget1 amounts
+    db_session.refresh(budget1)
+    assert budget1.spent_amount == 5000
+    assert budget1.remaining_amount == 5000
+    
+    # Change transaction to budget2
+    update_data = TransactionUpdate(budget_id=budget2.id)
+    updated_transaction = service.update_transaction(
+        transaction_id=transaction.id,
+        account_id=test_user.account.id,
+        transaction_data=update_data
+    )
+    
+    # Verify both budgets' amounts
+    db_session.refresh_all([budget1, budget2])
+    assert budget1.spent_amount == 0
+    assert budget1.remaining_amount == 10000
+    assert budget2.spent_amount == 5000
+    assert budget2.remaining_amount == 15000 

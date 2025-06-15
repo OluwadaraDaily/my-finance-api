@@ -1,5 +1,5 @@
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from db.models.budget import Budget
 from schemas.budget import BudgetCreate, BudgetUpdate, BudgetSummary, BudgetSummaryChart
@@ -84,3 +84,41 @@ class BudgetService:
             total_budget_amount=total_budget_amount,
             budgets=[BudgetSummaryChart(label=budget.name, amount=budget.total_amount, color=budget.color) for budget in budgets]
         )
+
+    def update_budget_amounts(self, budget_id: int, amount_change: int, is_debit: bool, user_id: int) -> Optional[Budget]:
+        """
+        Update budget amounts when a transaction changes
+        
+        Args:
+            budget_id: ID of the budget to update
+            amount_change: Amount to change (positive for increase, negative for decrease)
+            is_debit: Whether the transaction is a debit (expense) or credit (income)
+            
+        Returns:
+            Updated budget or None if budget not found
+        """
+        budget = self.crud.get_by_id(budget_id=budget_id, user_id=user_id)
+        if not budget:
+            return None
+            
+        # For DEBIT transactions (expenses), we increase spent_amount
+        # For CREDIT transactions (income), we decrease spent_amount
+        spent_amount_change = amount_change if is_debit else -amount_change
+        
+        # Update the budget's spent and remaining amounts
+        budget.spent_amount += spent_amount_change
+        budget.remaining_amount = budget.total_amount - budget.spent_amount
+        
+        # Ensure we don't have negative spent amount
+        if budget.spent_amount < 0:
+            budget.spent_amount = 0
+            budget.remaining_amount = budget.total_amount
+            
+        # Update the budget
+        self.crud.update(budget, {
+            "spent_amount": budget.spent_amount,
+            "remaining_amount": budget.remaining_amount,
+            "updated_at": datetime.now(timezone.utc)
+        })
+        
+        return budget
