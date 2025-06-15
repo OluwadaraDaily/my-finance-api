@@ -35,6 +35,7 @@ class BudgetCRUD:
             self.db.query(Budget)
             .options(selectinload(Budget.transactions))
             .filter(Budget.user_id == user_id, Budget.is_deleted == False)
+            .order_by(Budget.created_at.desc())
             .offset(skip)
             .limit(limit)
             .all()
@@ -75,7 +76,6 @@ class BudgetCRUD:
         """Update the spent and remaining amounts of a budget"""
         db_budget = (
             self.db.query(Budget)
-            .options(selectinload(Budget.transactions))
             .filter(Budget.id == budget_id)
             .first()
         )
