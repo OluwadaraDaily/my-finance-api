@@ -31,8 +31,12 @@ if [ -f "alembic_env_template.py" ]; then
     cp alembic_env_template.py alembic/env.py
 fi
 
-# Run migrations
-log_message "⬆️ Running database migrations..."
+# Ensure the color column migration is applied
+log_message "🔄 Ensuring color column migration is applied..."
+log_message "📌 Setting database to pre-color-column state..."
+PYTHONPATH=$PYTHONPATH:$(pwd) alembic stamp 78493e2f0c86
+
+log_message "⬆️ Applying remaining migrations..."
 PYTHONPATH=$PYTHONPATH:$(pwd) alembic upgrade head
 
 log_message "✨ Build process completed successfully!"
