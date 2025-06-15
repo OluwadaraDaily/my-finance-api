@@ -97,23 +97,62 @@ log_message "🔍 Getting latest migration revision..."
 HEAD_REVISION=$(PYTHONPATH=$PYTHONPATH:$(pwd) alembic heads | head -n 1 | awk '{print $1}')
 log_message "Latest revision: $HEAD_REVISION"
 
-# Compare and update if needed
-if [ "$CURRENT_REV" = "None" ] || [ "$CURRENT_REV" != "$HEAD_REVISION" ]; then
-    log_message "⚠️ Database is not up to date. Running migrations..."
+# Function to fix alembic version table if needed
+fix_alembic_version() {
+    log_message "🔧 Attempting to fix alembic_version table..."
     
-    # Try to run migrations
-    if ! PYTHONPATH=$PYTHONPATH:$(pwd) alembic upgrade head; then
-        log_message "❌ Migration failed. Attempting to fix..."
-        handle_migration_error
+    # Create a temporary Python script to check and fix the alembic_version table
+    cat > fix_alembic_version.py << EOF
+import os
+import sys
+from sqlalchemy import create_engine, text, exc
+
+db_url = os.environ.get('DB_URL')
+if not db_url:
+    print("ERROR: DB_URL environment variable not set")
+    sys.exit(1)
+
+try:
+    engine = create_engine(db_url)
+    with engine.connect() as conn:
+        # Check if alembic_version table exists
+        try:
+            result = conn.execute(text("SELECT version_num FROM alembic_version")).fetchone()
+            print("Found existing alembic_version table")
+        except exc.ProgrammingError:
+            # Table doesn't exist, create it
+            print("Creating alembic_version table...")
+            conn.execute(text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)"))
+            conn.commit()
+            print("Created alembic_version table")
         
-        # Try migrations again after fix
-        log_message "🔄 Retrying migrations..."
-        PYTHONPATH=$PYTHONPATH:$(pwd) alembic upgrade head || handle_error "Migration failed after recovery attempt"
-    fi
+        # Now we can safely proceed with version update
+        conn.execute(text("DELETE FROM alembic_version"))
+        conn.execute(text("INSERT INTO alembic_version (version_num) VALUES (:version)"), 
+                    {"version": "base"})
+        conn.commit()
+        print("Reset alembic_version to base state")
+except Exception as e:
+    print(f"Failed to fix database: {e}")
+    sys.exit(1)
+EOF
+
+    PYTHONPATH=$PYTHONPATH:$(pwd) python fix_alembic_version.py
+    rm fix_alembic_version.py
+}
+
+# Always try to run migrations first
+log_message "⬆️ Attempting to run migrations..."
+if ! PYTHONPATH=$PYTHONPATH:$(pwd) alembic upgrade head; then
+    log_message "⚠️ Initial migration attempt failed. Trying to fix alembic state..."
+    fix_alembic_version
     
-    log_message "✅ Migrations completed successfully!"
-else
-    log_message "✅ Database is already up to date!"
+    # Try running migrations again after fixing the version
+    log_message "🔄 Retrying migrations..."
+    if ! PYTHONPATH=$PYTHONPATH:$(pwd) alembic upgrade head; then
+        handle_error "Migration failed after recovery attempt. Please check the database state manually."
+    fi
 fi
 
+log_message "✅ Migrations completed successfully!"
 log_message "✨ Build process completed successfully!"
