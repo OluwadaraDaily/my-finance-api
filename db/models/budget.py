@@ -28,7 +28,8 @@ class Budget(Base):
         "Transaction",
         back_populates="budget",
         lazy="selectin",
-        order_by="desc(Transaction.transaction_date)"
+        order_by="desc(Transaction.transaction_date)",
+        cascade="all, delete-orphan"
     )
 
     def __repr__(self):
