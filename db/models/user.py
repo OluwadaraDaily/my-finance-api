@@ -21,6 +21,7 @@ class User(Base):
     pots = relationship("Pot", back_populates="user")
     user_auth = relationship("UserAuth", back_populates="user")
     activation_token = relationship("ActivationToken", back_populates="user", uselist=False)
+    password_reset_token = relationship("PasswordResetToken", back_populates="user", uselist=False)
     api_keys = relationship("APIKey", back_populates="user")
     categories = relationship("Category", back_populates="user")
     transactions = relationship("Transaction", back_populates="user")

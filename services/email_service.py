@@ -1,5 +1,6 @@
 from pydantic import EmailStr
 from core.email import EmailCore
+from core.config import settings
 from fastapi import HTTPException
 
 class EmailService:
@@ -23,7 +24,8 @@ class EmailService:
                 template_name="activation_email.html",
                 template_data={
                     "username": username,
-                    "activation_token": activation_token
+                    "activation_token": activation_token,
+                    "frontend_url": settings.FRONTEND_URL
                 }
             )
         except Exception as e:
@@ -49,7 +51,8 @@ class EmailService:
                 template_name="password_reset_email.html",
                 template_data={
                     "username": username,
-                    "reset_token": reset_token
+                    "reset_token": reset_token,
+                    "frontend_url": settings.FRONTEND_URL
                 }
             )
         except Exception as e:

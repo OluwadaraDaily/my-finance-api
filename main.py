@@ -20,8 +20,6 @@ load_dotenv(ENV_FILE, override=True)
 
 frontend_url = os.getenv("FRONTEND_URL")
 
-print("FRONTEND_URL =>", frontend_url)
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -61,12 +59,12 @@ app.include_router(accounts_router, prefix="/api/v1/accounts", tags=["accounts"]
 class EmailRequest(BaseModel):
     email: EmailStr
 
-@app.post("/test-email")
-async def test_email(request: EmailRequest):
+@app.get("/test-email")
+async def test_email():
     """Test endpoint to verify email configuration"""
     try:
         await EmailService(get_email_core()).send_activation_email(
-            email=request.email,
+            email="daraoloye99@gmail.com",
             username="Test User",
             activation_token="test-token"
         )

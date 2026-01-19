@@ -32,10 +32,10 @@
     <h1>Welcome {{ username }}!</h1>
     <p>Thank you for registering with My Finance. To complete your registration and activate your account, please click the button below:</p>
     
-    <a href="http://localhost:8000/api/v1/auth/activate/{{ activation_token }}" class="button">Activate Account</a>
-    
+    <a href="{{ frontend_url }}/auth/activate?token={{ activation_token }}" class="button">Activate Account</a>
+
     <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
-    <p>http://localhost:8000/api/v1/auth/activate/{{ activation_token }}</p>
+    <p>{{ frontend_url }}/auth/activate?token={{ activation_token }}</p>
     
     <div class="footer">
         <p>This is an automated message, please do not reply to this email.</p>

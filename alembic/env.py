@@ -5,6 +5,9 @@ from sqlalchemy import pool
 
 from alembic import context
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from db.base import Base
 from core.config import settings
 import db.models  # This imports all models

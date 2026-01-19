@@ -6,7 +6,7 @@ from schemas.user import UserCreate, UserLogin
 from services.email_service import EmailService
 from services.auth_service import AuthService
 from core.deps import get_email_core
-from schemas.auth import RefreshTokenRequest, LogoutRequest
+from schemas.auth import RefreshTokenRequest, LogoutRequest, EmailRequest, ResetPasswordRequest
 
 router = APIRouter()
 
@@ -62,3 +62,50 @@ async def validate_token(request: LogoutRequest, db: Session = Depends(get_db)) 
     auth_service = AuthService(db)
     return await auth_service.validate_token(request.access_token)
 
+
+@router.post("/resend-activation", response_model=dict)
+async def resend_activation(
+    request: EmailRequest,
+    db: Session = Depends(get_db),
+    email_service: EmailService = Depends(lambda: EmailService(get_email_core()))
+) -> dict:
+    """
+    Resend activation email to a user.
+    """
+    auth_service = AuthService(db)
+    return await auth_service.resend_activation_email(request.email, email_service)
+
+
+@router.post("/forgot-password", response_model=dict)
+async def forgot_password(
+    request: EmailRequest,
+    db: Session = Depends(get_db),
+    email_service: EmailService = Depends(lambda: EmailService(get_email_core()))
+) -> dict:
+    """
+    Send password reset email to a user.
+    """
+    auth_service = AuthService(db)
+    return await auth_service.forgot_password(request.email, email_service)
+
+
+@router.get("/validate-reset-token/{token}", response_model=dict)
+async def validate_reset_token(token: str, db: Session = Depends(get_db)) -> dict:
+    """
+    Validate a password reset token.
+    """
+    auth_service = AuthService(db)
+    return await auth_service.validate_reset_token(token)
+
+
+@router.post("/reset-password/{token}", response_model=dict)
+async def reset_password(
+    token: str,
+    request: ResetPasswordRequest,
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    Reset a user's password using a reset token.
+    """
+    auth_service = AuthService(db)
+    return await auth_service.reset_password(token, request.new_password)

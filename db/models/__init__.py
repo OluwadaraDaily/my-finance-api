@@ -6,6 +6,7 @@ from .pots import Pot
 from .transaction import Transaction
 from .user_auth import UserAuth
 from .activation_token import ActivationToken
+from .password_reset_token import PasswordResetToken
 
 # This ensures all models are imported and registered with Base
 __all__ = [
@@ -16,5 +17,6 @@ __all__ = [
     "Pot",
     "Transaction",
     "UserAuth",
-    "ActivationToken"
+    "ActivationToken",
+    "PasswordResetToken"
 ]

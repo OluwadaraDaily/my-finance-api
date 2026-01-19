@@ -1,35 +1,22 @@
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from pydantic import EmailStr
-from typing import List, Optional
-import os
+from typing import Optional
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
-from core.config import settings
-import ssl
 from fastapi import HTTPException
+import resend
+import os
+
+
+resend.api_key = os.getenv("RESEND_API_KEY")
+MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME")
+MAIL_FROM = os.getenv("MAIL_FROM")
 
 class EmailCore:
     def __init__(self):
-        self.configuration = ConnectionConfig(
-            MAIL_USERNAME=settings.MAIL_USERNAME,
-            MAIL_PASSWORD=settings.MAIL_PASSWORD,
-            MAIL_FROM=settings.MAIL_FROM,
-            MAIL_PORT=settings.MAIL_PORT,
-            MAIL_SERVER=settings.MAIL_SERVER,
-            MAIL_FROM_NAME=settings.MAIL_FROM_NAME,
-            MAIL_STARTTLS=False,
-            MAIL_SSL_TLS=True,
-            USE_CREDENTIALS=True,
-            VALIDATE_CERTS=True,
-            TEMPLATE_FOLDER=Path(__file__).parent.parent / 'templates',
-            SUPPRESS_SEND=True,
-            TIMEOUT=60
-        )
-        
+        self.template_folder = Path(__file__).parent.parent / 'templates'
         self.template_env = Environment(
-            loader=FileSystemLoader(self.configuration.TEMPLATE_FOLDER)
+            loader=FileSystemLoader(self.template_folder)
         )
-        self.fastmail = FastMail(self.configuration)
 
     async def send_email(
         self,
@@ -53,14 +40,14 @@ class EmailCore:
             if template_name and template_data:
                 html_content = self.render_template(template_name, **template_data)
 
-            message = MessageSchema(
-                subject=subject,
-                recipients=[to],
-                body=html_content,
-                subtype="html"
-            )
-            
-            await self.fastmail.send_message(message)
+            params: resend.Emails.SendParams = {
+                "from": f"{MAIL_FROM_NAME} <{MAIL_FROM}>",
+                "to": [to],
+                "subject": subject,
+                "html": html_content,
+            }
+            email: resend.Emails.SendResponse = resend.Emails.send(params)
+            return email
         except Exception as e:
             raise HTTPException(
                 status_code=500,
